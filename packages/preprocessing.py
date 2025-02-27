@@ -1,5 +1,5 @@
 import glob
-import sys
+import argparse, sys, os
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
@@ -9,38 +9,12 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.visualization import simple_norm, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.convolution import Gaussian2DKernel
-from photutils import Background2D, detect_threshold, detect_sources, CircularAperture, SourceCatalog, aperture_photometry
+from photutils import Background2D, detect_threshold, detect_sources
+from photutils import CircularAperture, SourceCatalog, aperture_photometry
 
-def f(srcpath, destpath=''): #converts fitz files to fits files
-
-	if not srcpath:
-		pass
-	elif srcpath[-1] != '/':
-		srcpath += '/'
-	if not destpath:
-			destpath = srcpath
-	elif destpath[-1] != '/':
-		destpath += '/'
-	fitzlist = glob.glob('{}*.fitz'.format(srcpath)) # returns a list of all files that match the given srcpath
-	if not os.path.exists(destpath):
-		os.makedirs(destpath)
-	for infile in fitzlist:
-		outfile = destpath+infile.split('/')[-1]
-		finalfile = '{}new_{}s'.format(destpath, infile.split('/')[-1][:-1])
-		infits = fits.open(outfile)
-		# store extension image
-		image = infits[1]
-		# save extension image as primary header of new file
-		newhdu = fits.PrimaryHDU(data=image.data, header=image.header)
-		hdulist = fits.HDUList([newhdu])
-		hdulist.writeto(finalfile, overwrite=True)
-		infits.close()
-		print('{} processed'.format(infile.split('/')[-1]))
-	print('Finished')
-
-f.fitz_to_fits(srcpath='/media/roisin/SP PHD U3/work/mrk1018/optical/stella_pipeline/files/2022')
-
-#TODO automatically delete the fitz files
+def Fcn(x, y):
+    #stuff
+    return
 
 fls = sorted(glob.glob('*.fits'))
 

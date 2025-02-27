@@ -1,2 +1,7 @@
 astropy
 photutils
+glob
+numpy
+matplotlib
+os
+argparse

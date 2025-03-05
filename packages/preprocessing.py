@@ -1,5 +1,4 @@
 import glob
-import argparse, sys, os
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import units as u
@@ -12,106 +11,134 @@ from astropy.convolution import Gaussian2DKernel
 from photutils import Background2D, detect_threshold, detect_sources
 from photutils import CircularAperture, SourceCatalog, aperture_photometry
 
-def Fcn(x, y):
-    #stuff
-    return
+# TODO add other functions for images (show, save?)
+# TODO options for background areas etc.
 
-fls = sorted(glob.glob('*.fits'))
+def GetFitsFileList():
 
-counts = Table(names = ('day', 'month', 'year', 'exp', 'dec_year', 'expt', 'fwhm', 'airmass', 'ref1', 'ref2', 'ref3', 'mrk1018'))
+    fitspath = input("Enter the fits files directory path: ")
 
-for i, fl in enumerate(fls):
-    name = str(fl)
-    date = name[-26:-18]
-    day  = float(date[6:8]) #separate day, month and year and convert back to float
-    month= float(date[4:6])
-    year = float(date[0:4])
-    exp  = name[-6]
-    dec_year = year + (month-1)/12 + (day-1)/365.25 #convert to decimal year
+    # Creates variable with list of fits files
+    file_list = sorted(glob.glob(fitspath + '*.fits'))
 
-    hdu = fits.open(fl)
+    return file_list
 
-    if hdu[0].header['FILTER'] == 'up':
+def GetCounts(file_list):
 
-        data = hdu[0].data[2020:2280, 2250:2890] #section image
+    # Sets up array with observation info
+    counts = Table(names = ('Day', 'Month', 'Year', 'Number of Exposure',\
+                            'Decimal Year', 'Exposure Time', 'FWHM',\
+                            'Airmass', 'Star 1 Counts', 'Star 2 Counts',\
+                            'Star 3 Counts', 'Mrk 1018 Counts'))
 
-        #norm = simple_norm(data, 'sqrt', percent=99.9)
-        #plt.imshow(data, cmap='Greys_r', origin='lower', norm=norm, interpolation='nearest')
-        #plt.xlim(0, data.shape[1]-1)
-        #plt.ylim(0, data.shape[0]-1)
-        #plt.show()
+    # Extracts information from files
+    for i, fits_file in enumerate(file_list):
+        name = str(fits_file)
+        date = name[-26:-18]
+        number_exp  = name[-6]
 
-        bkg = Background2D(data, box_size=(40, 35)) #calculate background map
-        threshold = bkg.background + 3.0 * bkg.background_rms #theshold for detection 3 sigma
+        # Separates day, month and year and converts to float
+        day  = float(date[6:8])
+        month= float(date[4:6])
+        year = float(date[0:4])
+        # Converts to decimal year
+        decimal_year = year + (month-1)/12 + (day-1)/365.25
 
-        sigma = 4.0 * gaussian_fwhm_to_sigma   #FWHM = 4, average STELLA FWHM
-        kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
-        kernel.normalize()
-        segm = detect_sources(data, threshold, npixels=100, connectivity = 4) #detect sources
+        hdu = fits.open(fits_file)
 
-        #norm = ImageNormalize(stretch=SqrtStretch())
-        #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12.5))
-        #ax1.imshow(data, origin='lower', cmap='Greys_r', norm=norm)#
-        #ax1.set_title('Background-subtracted Data')
-        #ax2.imshow(segm, origin='lower', cmap=segm.cmap, interpolation='nearest')
-        #ax2.set_title('Segmentation Image')
-        #plt.show()
+        # Specifies u' optical filter
+        if hdu[0].header['FILTER'] == 'up':
 
-        cat = SourceCatalog(data, segm) #fetch source information
-        tbl = cat.to_table()
+            # Extracts information from file header
+            exposure_time= hdu[0].header['EXPT']
+            airmass = hdu[0].header['AIRMASS']
+            fwhm = hdu[0].header['FWHM']
 
-        bool1 = (tbl['xcentroid'] < 200 ) & (tbl['xcentroid'] > 100 ) & (tbl['ycentroid'] < 100) & (tbl['ycentroid'] > 50)
+            # Focuses on area containing Mrk 1018
+            data = hdu[0].data[2020:2280, 2250:2890]
 
-        ref1  = tbl[bool1]  #isolate reference star 1
-        tbl = tbl[np.invert(bool1)]
+            # Creates background map
+            bkg = Background2D(data, box_size=(40, 35))
+            # Specifies 3 sigma minimum for source detection
+            threshold = bkg.background + 3.0 * bkg.background_rms
 
-        bool2 = (tbl['xcentroid'] < 200) & (tbl['xcentroid'] > 100) & (tbl['ycentroid'] < 200) & (tbl['ycentroid'] > 150)
+            # Specifies a FWHM of 4 - the average STELLA FWHM
+            # Converts this to sigma to use in kernel
+            sigma = 4.0 * gaussian_fwhm_to_sigma
+            kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
+            kernel.normalize()
+            # Isolates light sources
+            source_segmentation = detect_sources(data, threshold, npixels=100,\
+                                  connectivity = 4)
 
-        ref2  = tbl[bool2]  #isolate reference star 2
-        tbl = tbl[np.invert(bool2)]
+            # Fetches table with source information
+            cat = SourceCatalog(data, source_segmentation)
+            source_info = cat.to_table()
 
-        bool3 = (tbl['xcentroid'] > 500)
+            # For Star 1, Star 2 and Star 3:
+            # Specifies limits on location of each light source's centroid
+            # Applies limits to source table and stores result in variable
+            # Removes source from source table
 
-        ref3  = tbl[bool3]
-        tbl = tbl[np.invert(bool3)]
+            loc_limits1 = \
+            (source_info['xcentroid'] < 200) & \
+            (source_info['xcentroid'] > 100) & \
+            (source_info['ycentroid'] < 100) & \
+            (source_info['ycentroid'] > 50)
 
-        agn = tbl
+            star1  = source_info[loc_limits1]
+            source_info = source_info[np.invert(loc_limits1)]
 
-        #ref3_x = float(ref1['xcentroid']) + 361  #find ref 3 coords from ref1
-        #ref3_y = float(ref1['ycentroid']) + 62
+            loc_limits2 = \
+            (source_info['xcentroid'] < 200) & \
+            (source_info['xcentroid'] > 100) & \
+            (source_info['ycentroid'] < 200) & \
+            (source_info['ycentroid'] > 150)
 
-        #ref3_x = float(ref1['xcentroid']) + 392  #find ref 3 coords from ref2
-        #ref3_y = float(ref1['ycentroid']) - 20
+            star2  = source_info[loc_limits2]
+            source_info = source_info[np.invert(loc_limits2)]
 
-        agn_x   = int(np.around(agn['xcentroid'], decimals=0))
-        agn_y   = int(np.around(agn['ycentroid'], decimals=0))
+            loc_limits3 = (source_info['xcentroid'] > 500)
 
-        #extract local background for treatment of host image
-        loc_bkg = bkg.background[agn_y-100:agn_y+100, agn_x-100:agn_x+100]
+            star3  = source_info[loc_limits3]
+            source_info = source_info[np.invert(loc_limits3)]
 
-        fits.writeto('./local_bkg'+str(date)+'exp'+str(exp)+'.fits', loc_bkg, overwrite=True)
+            # The only source left in source_info must be the AGN
+            # Assigns agn source and centroids variables
+            agn = source_info
+            agn_x   = int(np.around(agn['xcentroid'], decimals=0))
+            agn_y   = int(np.around(agn['ycentroid'], decimals=0))
 
-        # P H O T O M E T R Y
+            # TODO specify file path for local bkgs
 
-        positions = [(float(ref1['xcentroid']), float(ref1['ycentroid'])), (float(ref2['xcentroid']), float(ref2['ycentroid'])), (float(ref3['xcentroid']), float(ref3['ycentroid'])), (float(agn['xcentroid']), float(agn['ycentroid']))]
-        apertures = CircularAperture(positions, r = 10/0.322)
+            # Extracts local background image for later use
+            # Save in local_bkg folder
+            local_bkg = bkg.background[agn_y-100:agn_y+100, agn_x-100:agn_x+100]
+            fits.writeto('./local_bkg'+str(date)+'exp'+str(number_exp)+'.fits',\
+                local_bkg, overwrite=True)
 
-        phot_tbl = aperture_photometry(data - bkg.background, apertures)
+            #TODO do I need these backslashes?
 
-        expt = hdu[0].header['EXPT'] #fetch exposure time of each image
-        airmass = hdu[0].header['AIRMASS']
-        fwhm = hdu[0].header['FWHM']
+            # Defines positions and apertures for photometric measurements
+            positions = [\
+                        (float(star1['xcentroid']), float(star1['ycentroid'])),\
+                        (float(star2['xcentroid']), float(star2['ycentroid'])),\
+                        (float(star3['xcentroid']), float(star3['ycentroid'])),\
+                        (float(agn['xcentroid']), float(agn['ycentroid'])) \
+                        ]
+            apertures = CircularAperture(positions, r = 10/0.322)
 
-        counts.add_row([day, month, year, exp, dec_year, expt, fwhm, airmass, phot_tbl['aperture_sum'][0], phot_tbl['aperture_sum'][1], phot_tbl['aperture_sum'][2], phot_tbl['aperture_sum'][3]])
+            # Table of background-subtracted counts for each object
+            phot_tbl = aperture_photometry(data - bkg.background, apertures)
 
-        #norm = simple_norm(data, 'sqrt', percent=99.9)
-        #plt.imshow(data, cmap='Greys_r', origin='lower', norm=norm, interpolation='nearest')
-        #apertures.plot(color='yellow', lw=1.5)
-        #plt.xlim(0, data.shape[1]-1)
-        #plt.ylim(0, data.shape[0]-1)
-        #plt.show()
+    # Adds observation info and photometry results to counts array
+    counts.add_row([day, month, year, number_exp, \
+                    decimal_year, exposure_time, fwhm, airmass, \
+                    phot_tbl['aperture_sum'][0], \
+                    phot_tbl['aperture_sum'][1], \
+                    phot_tbl['aperture_sum'][2], \
+                    phot_tbl['aperture_sum'][3]])
 
-#calculate and insert photon error
-counts.add_columns([np.sqrt(counts['ref1']), np.sqrt(counts['ref2']), np.sqrt(counts['ref3']), np.sqrt(counts['mrk1018'])], names=('err1', 'err2', 'err3', 'err_mrk1018'))
-
-ascii.write(counts, 'counts_new.csv', format = 'csv', overwrite = True)
+    # TODO create filepath to save results
+    # Saves results to .csv document
+    ascii.write(counts, 'counts.csv', format = 'csv', overwrite = True)

@@ -17,7 +17,7 @@ from photutils.segmentation import SourceCatalog, detect_sources, detect_thresho
 
 def GetFitsFileList():
 
-    fitspath = input("Enter the fits files directory path: ")
+    fitspath = input("Enter the fits files directory path ending in forward slash: ")
 
     # Creates variable with list of fits files
     file_list = sorted(glob.glob(fitspath + '*.fits'))
@@ -33,7 +33,8 @@ def GetCounts(file_list):
                             'Star 3 Counts', 'Mrk 1018 Counts'))
 
     # Extracts information from files
-    for i, fits_file in enumerate(file_list):
+    for fits_file in file_list:
+
         name = str(fits_file)
         date = name[-26:-18]
         number_exp  = name[-6]
@@ -48,7 +49,11 @@ def GetCounts(file_list):
         hdu = fits.open(fits_file)
 
         # Specifies u' optical filter
+
+        # TODO option to choose filter
+
         if hdu[0].header['FILTER'] == 'up':
+            print(fits_file)
 
             # Extracts information from file header
             exposure_time= hdu[0].header['EXPT']
@@ -132,13 +137,13 @@ def GetCounts(file_list):
             # Table of background-subtracted counts for each object
             phot_tbl = aperture_photometry(data - bkg.background, apertures)
 
-    # Adds observation info and photometry results to counts array
-    counts.add_row([day, month, year, number_exp, \
-                    decimal_year, exposure_time, fwhm, airmass, \
-                    phot_tbl['aperture_sum'][0], \
-                    phot_tbl['aperture_sum'][1], \
-                    phot_tbl['aperture_sum'][2], \
-                    phot_tbl['aperture_sum'][3]])
+            # Adds observation info and photometry results to counts array
+            counts.add_row([day, month, year, number_exp, \
+                decimal_year, exposure_time, fwhm, airmass, \
+                phot_tbl['aperture_sum'][0], \
+                phot_tbl['aperture_sum'][1], \
+                phot_tbl['aperture_sum'][2], \
+                phot_tbl['aperture_sum'][3]])
 
     # TODO create filepath to save results
     # Saves results to .csv document

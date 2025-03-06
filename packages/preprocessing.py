@@ -8,8 +8,9 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.visualization import simple_norm, SqrtStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.convolution import Gaussian2DKernel
-from photutils import Background2D, detect_threshold, detect_sources
-from photutils import CircularAperture, SourceCatalog, aperture_photometry
+from photutils.background import Background2D
+from photutils.aperture import CircularAperture, aperture_photometry
+from photutils.segmentation import SourceCatalog, detect_sources, detect_threshold
 
 # TODO add other functions for images (show, save?)
 # TODO options for background areas etc.

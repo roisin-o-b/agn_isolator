@@ -4,7 +4,7 @@ from astropy.io import fits
 
 # .fitz files must be convert to .fits before they can be manipulated
 
-def AskForPaths(): # Source path of .fitz files and destination path
+def ask_for_paths(): # Source path of .fitz files and destination path
                    # for .fits files requested from user
 
     srcpath = input("Enter the source path: ")
@@ -14,7 +14,7 @@ def AskForPaths(): # Source path of .fitz files and destination path
 
 # Many thanks to Fabian Emmerich for providing the convert function
 
-def ConvertFitzToFits(srcpath, destpath):
+def convert_fitz_to_fits(srcpath, destpath):
 
 	if not srcpath:
 		pass

@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.io import ascii
 
-def AverageExposures():
+def average_exposures():
 
     counts_file = input("Enter the counts file name, including full path: ")
 

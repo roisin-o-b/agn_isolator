@@ -15,7 +15,7 @@ from photutils.segmentation import SourceCatalog, detect_sources, detect_thresho
 # TODO add other functions for images (show, save?)
 # TODO options for background areas etc.
 
-def GetFitsFileList():
+def get_fits_file_list():
 
     fitspath = input("Enter the fits files directory path ending in forward slash: ")
 
@@ -24,7 +24,7 @@ def GetFitsFileList():
 
     return file_list
 
-def GetCounts(file_list):
+def get_counts(file_list):
 
     # Sets up array with observation info
     counts = Table(names = ('Day', 'Month', 'Year', 'Number of Exposure',\

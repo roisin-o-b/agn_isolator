@@ -1,2 +1,10 @@
 raw_data
 .python-version
+old_README.md
+fits_files
+testing
+counts.csv
+local_bkg20211222exp2.fits
+local_bkg20211222exp3.fits
+local_bkg20211222exp4.fits
+observations.csv

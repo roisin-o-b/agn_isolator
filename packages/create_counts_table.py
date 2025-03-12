@@ -29,8 +29,8 @@ def GetCounts(file_list):
     # Sets up array with observation info
     counts = Table(names = ('Day', 'Month', 'Year', 'Number of Exposure',\
                             'Decimal Year', 'Exposure Time', 'FWHM',\
-                            'Airmass', 'Star 1 Counts', 'Star 2 Counts',\
-                            'Star 3 Counts', 'Mrk 1018 Counts'))
+                            'Airmass', 'Star 1 counts', 'Star 2 counts',\
+                            'Star 3 counts', 'Mrk 1018 counts'))
 
     # Extracts information from files
     for fits_file in file_list:
@@ -145,6 +145,17 @@ def GetCounts(file_list):
                 phot_tbl['aperture_sum'][2], \
                 phot_tbl['aperture_sum'][3]])
 
-    # TODO create filepath to save results
+    # Calculates and inserts photon error
+    counts.add_columns(
+        [np.sqrt(counts['Star 1']),
+        np.sqrt(counts['Star 2']),
+        np.sqrt(counts['Star 3']),
+        np.sqrt(counts['Mrk 1018'])],
+        names=('Star 1 error', 'Star 2 error', 'Star 3 error', 'Mrk 1018 error')
+        )
+
     # Saves results to .csv document
     ascii.write(counts, 'counts.csv', format = 'csv', overwrite = True)
+
+    # TODO create filepath to save results
+    # TODO ask user to input file name

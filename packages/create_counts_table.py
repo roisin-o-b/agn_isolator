@@ -30,7 +30,7 @@ def GetCounts(file_list):
     counts = Table(names = ('Day', 'Month', 'Year', 'Number of Exposure',\
                             'Decimal Year', 'Exposure Time', 'FWHM',\
                             'Airmass', 'Star 1 counts', 'Star 2 counts',\
-                            'Star 3 counts', 'Mrk 1018 counts'))
+                            'Star 3 counts', 'Target counts'))
 
     # Extracts information from files
     for fits_file in file_list:
@@ -60,7 +60,7 @@ def GetCounts(file_list):
             airmass = hdu[0].header['AIRMASS']
             fwhm = hdu[0].header['FWHM']
 
-            # Focuses on area containing Mrk 1018
+            # Focuses on area containing Target
             data = hdu[0].data[2020:2280, 2250:2890]
 
             # Creates background map
@@ -147,11 +147,11 @@ def GetCounts(file_list):
 
     # Calculates and inserts photon error
     counts.add_columns(
-        [np.sqrt(counts['Star 1']),
-        np.sqrt(counts['Star 2']),
-        np.sqrt(counts['Star 3']),
-        np.sqrt(counts['Mrk 1018'])],
-        names=('Star 1 error', 'Star 2 error', 'Star 3 error', 'Mrk 1018 error')
+        [np.sqrt(counts['Star 1 counts']),
+        np.sqrt(counts['Star 2 counts']),
+        np.sqrt(counts['Star 3 counts']),
+        np.sqrt(counts['Target counts'])],
+        names=('Star 1 error', 'Star 2 error', 'Star 3 error', 'Target error')
         )
 
     # Saves results to .csv document
